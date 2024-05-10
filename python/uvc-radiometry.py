@@ -12,6 +12,11 @@ except ImportError:
 import platform
 
 BUF_SIZE = 2
+SAVE_RATE_SECONDS = 60
+FILENAME_PREFIX = 'image_'
+
+last_saved_time = 0
+
 q = Queue(BUF_SIZE)
 
 def py_frame_callback(frame, userptr):
@@ -42,6 +47,13 @@ def ktof(val):
 
 def ktoc(val):
   return (val - 27315) / 100.0
+
+def save_image(img, filename, last_saved_time):
+  current_time = time.time()
+
+  if current_time - last_saved_time >= SAVE_RATE_SECONDS:
+    cv2.imwrite(f'{FILENAME_PREFIX}{int(current_time)}.png', img)
+    last_saved_time = current_time
 
 def raw_to_8bit(data):
   cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
@@ -98,19 +110,29 @@ def main():
         exit(1)
 
       try:
+        last_saved_time = time.time()
+
         while True:
           data = q.get(True, 500)
           if data is None:
             break
+
           data = cv2.resize(data[:,:], (640, 480))
           minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+
           img = raw_to_8bit(data)
+          img = cv2.applyColorMap(img, cv2.COLORMAP_INFERNO)
+
           display_temperature(img, minVal, minLoc, (255, 0, 0))
           display_temperature(img, maxVal, maxLoc, (0, 0, 255))
-          cv2.imshow('Lepton Radiometry', img)
+
+          cv2.imshow('Lepton Radiometry', img, last_saved_time)
           cv2.waitKey(1)
 
+          save_image(img, f'{FILENAME_PREFIX}{int(time.time())}.png')
+
         cv2.destroyAllWindows()
+
       finally:
         libuvc.uvc_stop_streaming(devh)
 
