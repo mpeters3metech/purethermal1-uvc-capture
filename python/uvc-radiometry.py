@@ -51,9 +51,12 @@ def ktoc(val):
 def save_image(img, filename, last_saved_time):
   current_time = time.time()
 
+  print
+
   if current_time - last_saved_time >= SAVE_RATE_SECONDS:
     cv2.imwrite(f'{FILENAME_PREFIX}{int(current_time)}.png', img)
-    last_saved_time = current_time
+  
+  last_saved_time = current_time
 
 def raw_to_8bit(data):
   cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
