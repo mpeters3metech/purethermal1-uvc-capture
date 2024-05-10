@@ -49,8 +49,10 @@ def ktoc(val):
 def save_image(img, filename, last_saved_time):
   current_time = time.time()
 
+  print
+
   if current_time - last_saved_time >= SAVE_RATE_SECONDS:
-    cv2.imwrite(f'{FILENAME_PREFIX}{int(current_time)}.png', img)
+    cv2.imwrite(filename, img)
     return True
   
   return False
@@ -66,6 +68,8 @@ def display_temperature(img, val_k, loc, color):
   x, y = loc
   cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
   cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
+
+  return val
 
 def main():
   ctx = POINTER(uvc_context)()
@@ -125,17 +129,17 @@ def main():
           img = raw_to_8bit(data)
           img = cv2.applyColorMap(img, cv2.COLORMAP_INFERNO)
 
-          display_temperature(img, minVal, minLoc, (255, 0, 0))
-          display_temperature(img, maxVal, maxLoc, (0, 0, 255))
+          min_temp = display_temperature(img, minVal, minLoc, (255, 0, 0))
+          max_temp = display_temperature(img, maxVal, maxLoc, (0, 0, 255))
 
           cv2.imshow('Lepton Radiometry', img)
           cv2.waitKey(1)
 
-          b_image_saved = save_image(img, f'{FILENAME_PREFIX}{int(time.time())}.png', last_saved_time)
+          b_image_saved = save_image(img, f'{FILENAME_PREFIX}{int(time.time())}_maxCelsius{int(max_temp)}.png', last_saved_time)
 
           if b_image_saved:
             last_saved_time = time.time()
-            
+
         cv2.destroyAllWindows()
 
       finally:
