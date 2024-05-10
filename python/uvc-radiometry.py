@@ -15,8 +15,6 @@ BUF_SIZE = 2
 SAVE_RATE_SECONDS = 60
 FILENAME_PREFIX = 'image_'
 
-last_saved_time = 0
-
 q = Queue(BUF_SIZE)
 
 def py_frame_callback(frame, userptr):
@@ -53,8 +51,10 @@ def save_image(img, filename, last_saved_time):
 
   if current_time - last_saved_time >= SAVE_RATE_SECONDS:
     cv2.imwrite(f'{FILENAME_PREFIX}{int(current_time)}.png', img)
-    last_saved_time = current_time
-
+    return True
+  
+  return False
+  
 def raw_to_8bit(data):
   cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
   np.right_shift(data, 8, data)
@@ -72,6 +72,8 @@ def main():
   dev = POINTER(uvc_device)()
   devh = POINTER(uvc_device_handle)()
   ctrl = uvc_stream_ctrl()
+
+  last_saved_time = 0
 
   res = libuvc.uvc_init(byref(ctx), 0)
   if res < 0:
@@ -129,8 +131,11 @@ def main():
           cv2.imshow('Lepton Radiometry', img)
           cv2.waitKey(1)
 
-          save_image(img, f'{FILENAME_PREFIX}{int(time.time())}.png', last_saved_time)
+          b_image_saved = save_image(img, f'{FILENAME_PREFIX}{int(time.time())}.png', last_saved_time)
 
+          if b_image_saved:
+            last_saved_time = time.time()
+            
         cv2.destroyAllWindows()
 
       finally:
